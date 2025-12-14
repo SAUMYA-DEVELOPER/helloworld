@@ -4,7 +4,7 @@ const canvas = document.getElementById("overlay");
 const ctx = canvas.getContext("2d");
 const gestureDebug = document.getElementById("gestureDebug");
 
-// ================= CANVAS SIZE =================
+// ================= OVERLAY RESIZE =================
 function resizeOverlay() {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
@@ -20,7 +20,7 @@ const camera3D = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 
 camera3D.position.z = 18;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -31,7 +31,7 @@ window.addEventListener("resize", () => {
 });
 
 // ================= PARTICLES =================
-const COUNT = window.devicePixelRatio > 1.4 ? 45000 : 55000;
+const COUNT = devicePixelRatio > 1.4 ? 45000 : 55000;
 const geo = new THREE.BufferGeometry();
 
 const base = new Float32Array(COUNT * 3);
@@ -44,7 +44,8 @@ const core = new Float32Array(COUNT);
 // ================= TEXT SHAPE =================
 function generateTextPoints(txt) {
   const c = document.createElement("canvas");
-  c.width = 600; c.height = 200;
+  c.width = 600;
+  c.height = 200;
   const cx = c.getContext("2d");
 
   cx.font = "bold 72px Arial";
@@ -71,7 +72,7 @@ function generateTextPoints(txt) {
 }
 const textRaw = generateTextPoints("I love you Pgll");
 
-// ================= SHAPES =================
+// ================= SHAPE FUNCTIONS =================
 function heartPoint(i) {
   const t = (i / COUNT) * Math.PI * 2;
   const x = 16 * Math.pow(Math.sin(t), 3);
@@ -97,7 +98,7 @@ function flowerPoint(i) {
   return [Math.cos(t) * r, Math.sin(t) * r, (Math.random() - 0.5) * 3];
 }
 
-// ================= INIT =================
+// ================= INIT PARTICLES =================
 for (let i = 0; i < COUNT; i++) {
   const i3 = i * 3;
 
@@ -148,8 +149,8 @@ const mat = new THREE.ShaderMaterial({
       else if(uMode < 4.5) target = text;
 
       vec3 pos = mix(position, target, uMix * aCore);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.);
-      gl_PointSize = mix(1.5, 4.2, aCore);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.);
+      gl_PointSize = mix(1.6, 4.2, aCore);
     }
   `,
   fragmentShader: `
@@ -161,6 +162,7 @@ const mat = new THREE.ShaderMaterial({
     }
   `
 });
+
 scene.add(new THREE.Points(geo, mat));
 
 // ================= STATE =================
@@ -173,7 +175,9 @@ function animate() {
   requestAnimationFrame(animate);
 
   mat.uniforms.uTime.value += 0.015;
-  mat.uniforms.uPulse.value = currentMode < 1.5 ? Math.sin(mat.uniforms.uTime.value * 3) * 0.06 : 0;
+  mat.uniforms.uPulse.value = currentMode < 1.5
+    ? Math.sin(mat.uniforms.uTime.value * 3) * 0.06
+    : 0;
 
   mat.uniforms.uMix.value += (targetMix - mat.uniforms.uMix.value) * 0.06;
   currentMode += (targetMode - currentMode) * 0.08;
@@ -193,57 +197,74 @@ const hands = new Hands({
 });
 hands.setOptions({ maxNumHands: 2, modelComplexity: 0 });
 
+// ===== SKELETON (DOTS + LINES) =====
+const connections = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20]
+];
+
 function drawSkeleton(lm) {
   ctx.strokeStyle = "cyan";
   ctx.lineWidth = 2;
-  const connections = [
-    [0,1],[1,2],[2,3],[3,4],
-    [0,5],[5,6],[6,7],[7,8],
-    [5,9],[9,10],[10,11],[11,12],
-    [9,13],[13,14],[14,15],[15,16],
-    [13,17],[17,18],[18,19],[19,20]
-  ];
-  connections.forEach(([a,b])=>{
+
+  connections.forEach(([a, b]) => {
     ctx.beginPath();
-    ctx.moveTo(lm[a].x*canvas.width, lm[a].y*canvas.height);
-    ctx.lineTo(lm[b].x*canvas.width, lm[b].y*canvas.height);
+    ctx.moveTo(lm[a].x * canvas.width, lm[a].y * canvas.height);
+    ctx.lineTo(lm[b].x * canvas.width, lm[b].y * canvas.height);
     ctx.stroke();
+  });
+
+  ctx.fillStyle = "white";
+  lm.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x * canvas.width, p.y * canvas.height, 3, 0, Math.PI * 2);
+    ctx.fill();
   });
 }
 
-function fingerCurl(tip, pip){
+// ================= GESTURE LOGIC =================
+function fingerCurl(tip, pip) {
   return Math.min(Math.max((pip.y - tip.y) * 5, 0), 1);
 }
 
 hands.onResults(res => {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (!res.multiHandLandmarks?.length) {
+  if (!res.multiHandLandmarks || res.multiHandLandmarks.length === 0) {
     targetMode = 0;
-    targetMix = Math.max(targetMix - 0.05, 0);
+    targetMix = Math.max(targetMix - 0.04, 0);
     gestureDebug.innerText = "Idle";
     return;
   }
 
   res.multiHandLandmarks.forEach(drawSkeleton);
 
-  // ❤️ TWO HAND HEART DETECTION (FIXED)
+  // ===== TWO HAND HEART =====
   if (res.multiHandLandmarks.length === 2) {
-    const [A,B] = res.multiHandLandmarks;
-    const dA = Math.hypot(A[4].x - A[8].x, A[4].y - A[8].y);
-    const dB = Math.hypot(B[4].x - B[8].x, B[4].y - B[8].y);
+    const A = res.multiHandLandmarks[0];
+    const B = res.multiHandLandmarks[1];
+
+    const pinchA = Math.hypot(A[4].x - A[8].x, A[4].y - A[8].y);
+    const pinchB = Math.hypot(B[4].x - B[8].x, B[4].y - B[8].y);
     const centerDist = Math.hypot(A[8].x - B[8].x, A[8].y - B[8].y);
 
-    if (dA < 0.06 && dB < 0.06 && centerDist < 0.15) {
+    if (pinchA < 0.06 && pinchB < 0.06 && centerDist < 0.15) {
       targetMode = 4;
       targetMix = Math.min(targetMix + 0.06, 1);
-      mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.3,0.45),0.1);
+      mat.uniforms.uColor.value.lerp(new THREE.Color(1, 0.25, 0.4), 0.1);
       gestureDebug.innerText = "💖 Two-Hand Heart (Text)";
       return;
     }
   }
 
+  // ===== SINGLE HAND =====
   const lm = res.multiHandLandmarks[0];
+  const up = i => lm[i].y < lm[i - 2].y;
+  const fingers = [up(8), up(12), up(16), up(20)];
+
   const curl =
     fingerCurl(lm[8], lm[6]) +
     fingerCurl(lm[12], lm[10]) +
@@ -251,14 +272,32 @@ hands.onResults(res => {
     fingerCurl(lm[20], lm[18]);
 
   const openness = 1 - curl / 4;
-  targetMix = openness;
+  targetMix += (openness - targetMix) * 0.2;
 
-  if (openness < 0.2) {
+  if (fingers.every(v => !v)) {
     targetMode = 1;
-    mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.3,0.5),0.08);
-    gestureDebug.innerText = "❤️ Fist (Heart)";
-  } else if (openness > 0.7) {
+    mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.3,0.5), 0.06);
+    gestureDebug.innerText = "❤️ Heart";
+    return;
+  }
+
+  if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3]) {
+    targetMode = 2;
+    mat.uniforms.uColor.value.lerp(new THREE.Color(0.2,0.9,1), 0.06);
+    gestureDebug.innerText = "🪐 Saturn";
+    return;
+  }
+
+  if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3]) {
+    targetMode = 3;
+    mat.uniforms.uColor.value.lerp(new THREE.Color(0.8,0.4,1), 0.06);
+    gestureDebug.innerText = "🌸 Flower";
+    return;
+  }
+
+  if (fingers.every(v => v)) {
     targetMode = 0;
+    mat.uniforms.uColor.value.lerp(new THREE.Color(0.6,0.6,1), 0.06);
     gestureDebug.innerText = "✋ Space";
   }
 });
