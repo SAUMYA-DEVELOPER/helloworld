@@ -1,36 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Gesture Particles</title>
-<style>
-  body { margin:0; overflow:hidden; background:#000; }
-  canvas { display:block; }
-
-  #handPreview{
-    position:fixed;
-    right:15px;
-    bottom:15px;
-    width:220px;
-    height:160px;
-    border:1px solid cyan;
-    background:rgba(0,0,0,0.5);
-    z-index:10;
-  }
-
-  video{ display:none; }
-</style>
+<meta charset="UTF-8">
+<title>Gesture Particle Universe</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<video id="video" playsinline></video>
-<canvas id="handPreview" width="220" height="160"></canvas>
+<button id="startBtn">Start</button>
+<div id="gestureDebug">Idle</div>
+<div id="loveText">I love you DISHA JAIN ❤️</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<div id="camContainer">
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="overlay"></canvas>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.min.js"></script>
 
 <script src="main.js"></script>
 </body>
