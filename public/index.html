@@ -2,20 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Cosmic Hand Particles</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gesture Particles</title>
   <style>
-    body { margin:0; overflow:hidden; background:black; }
-    #cam {
-      position:fixed; right:16px; bottom:16px;
-      width:220px; border:2px solid cyan;
-      border-radius:12px; z-index:10;
+    body { margin: 0; overflow: hidden; background: black; }
+    #videoWrap {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: 240px;
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 10;
     }
-    canvas { display:block; }
+    video, canvas { width: 100%; height: auto; }
   </style>
 </head>
 <body>
-  <video id="cam" autoplay muted playsinline></video>
-  <script type="module" src="./src/main.js"></script>
+
+<div id="videoWrap">
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="skeleton"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.min.js"></script>
+<script type="module" src="./main.js"></script>
 </body>
 </html>
