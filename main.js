@@ -1,153 +1,149 @@
-/* ---------------- THREE SETUP ---------------- */
+/* ---------- THREE ---------- */
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000011);
+scene.background = new THREE.Color(0x000010);
 
-const camera3D = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 100);
-camera3D.position.z = 6;
+const cam3D = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 100);
+cam3D.position.z = 6;
 
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* ---------------- PARTICLES ---------------- */
-const COUNT = 30000;
-let geometry = new THREE.BufferGeometry();
-let positions = new Float32Array(COUNT * 3);
-geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+/* ---------- PARTICLES ---------- */
+const COUNT = 25000;
+const geometry = new THREE.BufferGeometry();
+const pos = new Float32Array(COUNT * 3);
+geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
 
-let material = new THREE.PointsMaterial({
-  size: 0.04,
+const material = new THREE.PointsMaterial({
+  size: 0.035,
   color: 0x66ccff,
   transparent: true,
   opacity: 0.9,
-  blending: THREE.AdditiveBlending
+  blending: THREE.AdditiveBlending,
+  depthWrite:false
 });
 
-let points = new THREE.Points(geometry, material);
+const points = new THREE.Points(geometry, material);
 scene.add(points);
 
-/* ---------------- SHAPES ---------------- */
-const heart = generateHeart();
-const saturn = generateSaturn();
-const flower = generateFlower();
+/* ---------- SHAPES ---------- */
+const heart = genHeart();
+const flower = genFlower();
+const saturn = genSaturn();
 
-let shapeBlend = 0; // 0 heart, 0.5 flower, 1 saturn
+let shapeBlend = -1; // IMPORTANT → no hand = no shape
 
-function generateHeart(){
-  let a = new Float32Array(COUNT*3);
+function genHeart(){
+  const a = new Float32Array(COUNT*3);
   for(let i=0;i<COUNT;i++){
-    let t = Math.random()*Math.PI*2;
-    let s = 0.04;
-    a[i*3] = 16*Math.pow(Math.sin(t),3)*s;
-    a[i*3+1] = (13*Math.cos(t)-5*Math.cos(2*t))*s;
-    a[i*3+2] = (Math.random()-0.5);
+    let t=Math.random()*Math.PI*2,s=0.04;
+    a[i*3]=16*Math.sin(t)**3*s;
+    a[i*3+1]=(13*Math.cos(t)-5*Math.cos(2*t))*s;
+    a[i*3+2]=(Math.random()-0.5);
+  }
+  return a;
+}
+function genFlower(){
+  const a = new Float32Array(COUNT*3);
+  for(let i=0;i<COUNT;i++){
+    let t=Math.random()*Math.PI*2;
+    let r=Math.sin(5*t)*1.5+2;
+    a[i*3]=Math.cos(t)*r;
+    a[i*3+1]=Math.sin(t)*r;
+    a[i*3+2]=(Math.random()-0.5);
+  }
+  return a;
+}
+function genSaturn(){
+  const a = new Float32Array(COUNT*3);
+  for(let i=0;i<COUNT;i++){
+    let t=Math.random()*Math.PI*2;
+    let r=2+Math.random()*1.5;
+    a[i*3]=Math.cos(t)*r;
+    a[i*3+1]=(Math.random()-0.5)*0.2;
+    a[i*3+2]=Math.sin(t)*r;
   }
   return a;
 }
 
-function generateSaturn(){
-  let a = new Float32Array(COUNT*3);
-  for(let i=0;i<COUNT;i++){
-    let ang = Math.random()*Math.PI*2;
-    let r = 2 + Math.random()*1.5;
-    a[i*3] = Math.cos(ang)*r;
-    a[i*3+1] = (Math.random()-0.5)*0.2;
-    a[i*3+2] = Math.sin(ang)*r;
-  }
-  return a;
-}
-
-function generateFlower(){
-  let a = new Float32Array(COUNT*3);
-  for(let i=0;i<COUNT;i++){
-    let t = Math.random()*Math.PI*2;
-    let r = Math.sin(5*t)*1.5 + 2;
-    a[i*3] = Math.cos(t)*r;
-    a[i*3+1] = Math.sin(t)*r;
-    a[i*3+2] = (Math.random()-0.5);
-  }
-  return a;
-}
-
-/* ---------------- HAND TRACKING ---------------- */
+/* ---------- HAND TRACKING ---------- */
 const video = document.getElementById("video");
-const canvas2D = document.getElementById("handPreview");
-const ctx = canvas2D.getContext("2d");
+const canvas = document.getElementById("handPreview");
+const ctx = canvas.getContext("2d");
 
 const hands = new Hands({
-  locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  locateFile: f =>
+    `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`
 });
 
 hands.setOptions({
-  maxNumHands: 1,
-  minDetectionConfidence: 0.7,
-  minTrackingConfidence: 0.7
+  maxNumHands:1,
+  modelComplexity:1,
+  minDetectionConfidence:0.7,
+  minTrackingConfidence:0.7
 });
 
-hands.onResults(res => {
-  ctx.clearRect(0,0,canvas2D.width,canvas2D.height);
+hands.onResults(r=>{
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(res.multiHandLandmarks.length){
-    const lm = res.multiHandLandmarks[0];
-
-    drawConnectors(ctx, lm, HAND_CONNECTIONS, {color:'#0ff'});
-    drawLandmarks(ctx, lm, {color:'#fff', radius:2});
-
-    // gesture logic
-    const thumb = lm[4];
-    const index = lm[8];
-    const pinky = lm[20];
-
-    const spread =
-      Math.abs(thumb.x - pinky.x) +
-      Math.abs(thumb.y - pinky.y);
-
-    if(spread < 0.25) shapeBlend = 0;        // fist → heart
-    else if(spread < 0.45) shapeBlend = 0.5; // 2–3 fingers → flower
-    else shapeBlend = 1;                     // open palm → saturn
+  if(!r.multiHandLandmarks.length){
+    shapeBlend = -1;
+    return;
   }
+
+  const lm = r.multiHandLandmarks[0];
+  drawConnectors(ctx,lm,HAND_CONNECTIONS,{color:"#00ffff"});
+  drawLandmarks(ctx,lm,{color:"#fff",radius:2});
+
+  const thumb = lm[4];
+  const pinky = lm[20];
+  const spread = Math.abs(thumb.x-pinky.x)+Math.abs(thumb.y-pinky.y);
+
+  if(spread < 0.25) shapeBlend = 0;        // heart
+  else if(spread < 0.45) shapeBlend = 0.5; // flower
+  else shapeBlend = 1;                     // saturn
 });
 
-const cam = new Camera(video, {
-  onFrame: async () => await hands.send({image: video}),
-  width: 640,
-  height: 480
-});
-cam.start();
+new Camera(video,{
+  onFrame:async()=>await hands.send({image:video}),
+  width:640,height:480
+}).start();
 
-/* ---------------- ANIMATION ---------------- */
+/* ---------- LOOP ---------- */
 function animate(){
   requestAnimationFrame(animate);
 
-  const pos = geometry.attributes.position.array;
-
   for(let i=0;i<COUNT;i++){
-    let i3 = i*3;
+    let i3=i*3;
 
-    let a,b;
-    if(shapeBlend < 0.5){
-      a = heart; b = flower;
-      var t = shapeBlend*2;
-    } else {
-      a = flower; b = saturn;
-      var t = (shapeBlend-0.5)*2;
+    if(shapeBlend < 0){
+      pos[i3]=pos[i3+1]=pos[i3+2]=9999;
+      continue;
     }
 
-    pos[i3]   = THREE.MathUtils.lerp(a[i3],   b[i3],   t);
-    pos[i3+1] = THREE.MathUtils.lerp(a[i3+1], b[i3+1], t);
-    pos[i3+2] = THREE.MathUtils.lerp(a[i3+2], b[i3+2], t);
+    let a,b,t;
+    if(shapeBlend < 0.5){
+      a=heart; b=flower; t=shapeBlend*2;
+    }else{
+      a=flower; b=saturn; t=(shapeBlend-0.5)*2;
+    }
+
+    pos[i3]=THREE.MathUtils.lerp(a[i3],b[i3],t);
+    pos[i3+1]=THREE.MathUtils.lerp(a[i3+1],b[i3+1],t);
+    pos[i3+2]=THREE.MathUtils.lerp(a[i3+2],b[i3+2],t);
   }
 
   geometry.attributes.position.needsUpdate = true;
   points.rotation.y += 0.002;
 
-  renderer.render(scene, camera3D);
+  renderer.render(scene,cam3D);
 }
 animate();
 
-/* ---------------- RESIZE ---------------- */
-addEventListener('resize', ()=>{
-  camera3D.aspect = innerWidth/innerHeight;
-  camera3D.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+/* ---------- RESIZE ---------- */
+addEventListener("resize",()=>{
+  cam3D.aspect=innerWidth/innerHeight;
+  cam3D.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
 });
