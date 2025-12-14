@@ -108,3 +108,6 @@ canvas{
     font-size:13px;
   }
 }
+#overlay{
+  mix-blend-mode: screen;
+}
