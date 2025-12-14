@@ -2,30 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Gesture Particles</title>
+  <title>Cosmic Hand Particles</title>
   <style>
     body { margin: 0; overflow: hidden; background: black; }
-    #videoWrap {
+    video {
       position: fixed;
-      right: 16px;
-      bottom: 16px;
-      width: 240px;
+      right: 20px;
+      bottom: 20px;
+      width: 220px;
       border-radius: 12px;
-      overflow: hidden;
       z-index: 10;
     }
-    video, canvas { width: 100%; height: auto; }
+    canvas { display: block; }
   </style>
 </head>
 <body>
 
-<div id="videoWrap">
   <video id="video" autoplay muted playsinline></video>
-  <canvas id="skeleton"></canvas>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.min.js"></script>
-<script type="module" src="./main.js"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
