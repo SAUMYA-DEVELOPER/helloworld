@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cosmic Hand Particles</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin:0; overflow:hidden; background:black; }
+    #cam {
+      position:fixed; right:16px; bottom:16px;
+      width:220px; border:2px solid cyan;
+      border-radius:12px; z-index:10;
+    }
+    canvas { display:block; }
+  </style>
+</head>
+<body>
+  <video id="cam" autoplay muted playsinline></video>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
