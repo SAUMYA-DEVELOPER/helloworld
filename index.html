@@ -2,39 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Gesture Particle System</title>
+<title>Gesture Particles</title>
+
 <style>
   body { margin:0; overflow:hidden; background:#000; }
   canvas { display:block; }
 
-  /* hand skeleton preview */
   #handPreview {
     position: fixed;
     bottom: 15px;
     right: 15px;
     width: 220px;
     height: 160px;
-    border: 1px solid #0ff;
+    border: 1px solid #00ffff;
     z-index: 10;
     background: rgba(0,0,0,0.6);
   }
 
-  video {
-    display: none;
-  }
+  video { display:none; }
 </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline></video>
-<canvas id="handPreview"></canvas>
+<video id="video" playsinline></video>
+<canvas id="handPreview" width="220" height="160"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.128/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 
-<!-- Mediapipe -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.min.js"></script>
 
 <script src="main.js"></script>
 </body>
