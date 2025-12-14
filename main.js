@@ -1,152 +1,175 @@
-/* ---------- THREE ---------- */
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x020416);
+/* ================= DOM ================= */
+const video=document.getElementById("video");
+const canvas=document.getElementById("overlay");
+const ctx=canvas.getContext("2d");
+const debug=document.getElementById("gestureDebug");
+const loveText=document.getElementById("loveText");
 
-const cam3D = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 100);
-cam3D.position.z = 7;
+/* ================= THREE ================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020416);
 
-const renderer = new THREE.WebGLRenderer({ antialias:true });
-renderer.setSize(innerWidth, innerHeight);
+const camera3D=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,300);
+camera3D.position.z=18;
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* ---------- PARTICLES ---------- */
-const COUNT = 20000;
-const geometry = new THREE.BufferGeometry();
-const pos = new Float32Array(COUNT * 3);
-geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+/* ================= PARTICLES ================= */
+const COUNT=60000;
+const geo=new THREE.BufferGeometry();
 
-const material = new THREE.PointsMaterial({
-  size: 0.045,
-  color: 0x66ccff,
-  transparent: true,
-  opacity: 1,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false
+const base=new Float32Array(COUNT*3);
+const heart=new Float32Array(COUNT*3);
+const saturn=new Float32Array(COUNT*3);
+const cube=new Float32Array(COUNT*3);
+const core=new Float32Array(COUNT);
+
+for(let i=0;i<COUNT;i++){
+  const i3=i*3;
+  base[i3]=(Math.random()-0.5)*30;
+  base[i3+1]=(Math.random()-0.5)*30;
+  base[i3+2]=(Math.random()-0.5)*30;
+
+  let t=Math.random()*Math.PI*2,s=1.1;
+  heart[i3]=16*Math.sin(t)**3*s*0.25;
+  heart[i3+1]=(13*Math.cos(t)-5*Math.cos(2*t))*s*0.25;
+  heart[i3+2]=(Math.random()-0.5)*2;
+
+  let a=Math.random()*Math.PI*2,r=5+Math.random()*2;
+  saturn[i3]=Math.cos(a)*r;
+  saturn[i3+1]=(Math.random()-0.5)*0.6;
+  saturn[i3+2]=Math.sin(a)*r;
+
+  cube[i3]=(Math.floor(Math.random()*5)-2)*2;
+  cube[i3+1]=(Math.floor(Math.random()*5)-2)*2;
+  cube[i3+2]=(Math.floor(Math.random()*5)-2)*2;
+
+  core[i]=Math.random()<0.35?1:0;
+}
+
+geo.setAttribute("position",new THREE.BufferAttribute(base,3));
+geo.setAttribute("heart",new THREE.BufferAttribute(heart,3));
+geo.setAttribute("saturn",new THREE.BufferAttribute(saturn,3));
+geo.setAttribute("cube",new THREE.BufferAttribute(cube,3));
+geo.setAttribute("aCore",new THREE.BufferAttribute(core,1));
+
+/* ================= SHADER ================= */
+const mat=new THREE.ShaderMaterial({
+  transparent:true,
+  blending:THREE.AdditiveBlending,
+  uniforms:{
+    uTime:{value:0},
+    uMode:{value:0},
+    uMix:{value:0},
+    uHand:{value:new THREE.Vector3()},
+    uColor:{value:new THREE.Color(1,1,1)},
+    uZoom:{value:18}
+  },
+  vertexShader:`
+    uniform float uTime,uMode,uMix,uZoom;
+    uniform vec3 uHand;
+    attribute vec3 heart,saturn,cube;
+    attribute float aCore;
+    void main(){
+      vec3 pos=position;
+      pos += (uHand-pos)*aCore*0.35;
+
+      vec3 target=heart;
+      if(uMode>1.5) target=saturn;
+      if(uMode>2.5) target=cube;
+
+      pos=mix(pos,target,uMix);
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.);
+      gl_PointSize=mix(1.5,3.5,aCore);
+    }
+  `,
+  fragmentShader:`
+    uniform vec3 uColor;
+    void main(){
+      float d=length(gl_PointCoord-.5);
+      if(d>.5) discard;
+      gl_FragColor=vec4(uColor,1.);
+    }
+  `
 });
+scene.add(new THREE.Points(geo,mat));
 
-const particles = new THREE.Points(geometry, material);
-scene.add(particles);
+/* ================= STATE ================= */
+let targetMode=0,targetMix=0;
+let handPos=new THREE.Vector3();
+let lastX=null;
 
-/* ---------- SHAPES ---------- */
-const heart = genHeart();
-const flower = genFlower();
-const saturn = genSaturn();
-
-let shapeBlend = 0.5;   // DEFAULT FLOWER
-let hasHand = false;
-
-function genHeart(){
-  const a=new Float32Array(COUNT*3);
-  for(let i=0;i<COUNT;i++){
-    let t=Math.random()*Math.PI*2,s=0.045;
-    a[i*3]=16*Math.sin(t)**3*s;
-    a[i*3+1]=(13*Math.cos(t)-5*Math.cos(2*t))*s;
-    a[i*3+2]=(Math.random()-0.5)*0.8;
-  }
-  return a;
-}
-function genFlower(){
-  const a=new Float32Array(COUNT*3);
-  for(let i=0;i<COUNT;i++){
-    let t=Math.random()*Math.PI*2;
-    let r=Math.sin(5*t)*1.6+2.2;
-    a[i*3]=Math.cos(t)*r;
-    a[i*3+1]=Math.sin(t)*r;
-    a[i*3+2]=(Math.random()-0.5)*0.6;
-  }
-  return a;
-}
-function genSaturn(){
-  const a=new Float32Array(COUNT*3);
-  for(let i=0;i<COUNT;i++){
-    let t=Math.random()*Math.PI*2;
-    let r=2.5+Math.random()*1.5;
-    a[i*3]=Math.cos(t)*r;
-    a[i*3+1]=(Math.random()-0.5)*0.15;
-    a[i*3+2]=Math.sin(t)*r;
-  }
-  return a;
-}
-
-/* ---------- HAND TRACKING ---------- */
-const video=document.getElementById("video");
-const canvas=document.getElementById("handPreview");
-const ctx=canvas.getContext("2d");
-
+/* ================= MEDIAPIPE ================= */
 const hands=new Hands({
-  locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`
+  locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
 });
+hands.setOptions({maxNumHands:2,modelComplexity:0});
 
-hands.setOptions({
-  maxNumHands:1,
-  modelComplexity:1,
-  minDetectionConfidence:0.7,
-  minTrackingConfidence:0.7
-});
-
-hands.onResults(r=>{
+hands.onResults(res=>{
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(!r.multiHandLandmarks.length){
-    hasHand = false;
+  if(!res.multiHandLandmarks?.length){
+    targetMix*=0.95;
+    debug.innerText="Idle";
     return;
   }
 
-  hasHand = true;
-  const lm=r.multiHandLandmarks[0];
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
 
-  drawConnectors(ctx,lm,HAND_CONNECTIONS,{color:"#00ffff"});
-  drawLandmarks(ctx,lm,{color:"#ffffff",radius:2});
+  const lm=res.multiHandLandmarks[0];
+  lm.forEach(p=>{
+    ctx.fillStyle="#00ffff";
+    ctx.beginPath();
+    ctx.arc(p.x*canvas.width,p.y*canvas.height,3,0,Math.PI*2);
+    ctx.fill();
+  });
 
-  const index=lm[8];
-  const pinky=lm[20];
+  // hand follow
+  handPos.set((lm[9].x-0.5)*30,(-lm[9].y+0.5)*30,0);
+  mat.uniforms.uHand.value.copy(handPos);
 
-  const spread=Math.hypot(index.x-pinky.x,index.y-pinky.y);
+  // pinch zoom
+  const pinch=Math.hypot(lm[4].x-lm[8].x,lm[4].y-lm[8].y);
+  camera3D.position.z+=((pinch<0.05?10:18)-camera3D.position.z)*0.05;
 
-  if(spread < 0.07) shapeBlend = 0;        // heart
-  else if(spread < 0.16) shapeBlend = 0.5; // flower
-  else shapeBlend = 1;                     // saturn
+  // swipe
+  if(lastX!==null){
+    if(lm[9].x-lastX>0.08) targetMode=(targetMode+1)%3;
+    if(lm[9].x-lastX<-0.08) targetMode=(targetMode+2)%3;
+  }
+  lastX=lm[9].x;
+
+  targetMix=Math.min(targetMix+0.04,1);
+  debug.innerText=["Heart","Saturn","Cube"][targetMode];
 });
 
-new Camera(video,{
-  onFrame:async()=>await hands.send({image:video}),
-  width:640,height:480
-}).start();
+/* ================= START ================= */
+document.getElementById("startBtn").onclick=async()=>{
+  const s=await navigator.mediaDevices.getUserMedia({video:true});
+  video.srcObject=s;await video.play();
+  (async function loop(){
+    await hands.send({image:video});
+    requestAnimationFrame(loop);
+  })();
+};
 
-/* ---------- LOOP ---------- */
+/* ================= ANIMATE ================= */
 function animate(){
   requestAnimationFrame(animate);
+  mat.uniforms.uTime.value+=0.01;
+  mat.uniforms.uMix.value+=(targetMix-mat.uniforms.uMix.value)*0.06;
+  mat.uniforms.uMode.value+=(targetMode-mat.uniforms.uMode.value)*0.08;
 
-  for(let i=0;i<COUNT;i++){
-    let i3=i*3;
-
-    if(!hasHand){
-      pos[i3]=pos[i3+1]=pos[i3+2]=9999;
-      continue;
-    }
-
-    let a,b,t;
-    if(shapeBlend < 0.5){
-      a=heart; b=flower; t=shapeBlend*2;
-    }else{
-      a=flower; b=saturn; t=(shapeBlend-0.5)*2;
-    }
-
-    pos[i3]   = THREE.MathUtils.lerp(a[i3],   b[i3],   t);
-    pos[i3+1] = THREE.MathUtils.lerp(a[i3+1], b[i3+1], t);
-    pos[i3+2] = THREE.MathUtils.lerp(a[i3+2], b[i3+2], t);
-  }
-
-  geometry.attributes.position.needsUpdate = true;
-  particles.rotation.y += 0.0025;
-
-  renderer.render(scene, cam3D);
+  scene.rotation.y+=0.002;
+  renderer.render(scene,camera3D);
 }
 animate();
 
-/* ---------- RESIZE ---------- */
 addEventListener("resize",()=>{
-  cam3D.aspect=innerWidth/innerHeight;
-  cam3D.updateProjectionMatrix();
+  camera3D.aspect=innerWidth/innerHeight;
+  camera3D.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
