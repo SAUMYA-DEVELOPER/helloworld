@@ -270,22 +270,17 @@ hands.onResults(res=>{
 
   res.multiHandLandmarks.forEach(drawSkeleton);
 
-  if(res.multiHandLandmarks.length===2){
-    const [A,B]=res.multiHandLandmarks;
-    const pA=Math.hypot(A[4].x-A[8].x,A[4].y-A[8].y);
-    const pB=Math.hypot(B[4].x-B[8].x,B[4].y-B[8].y);
-    const cD=Math.hypot(A[8].x-B[8].x,A[8].y-B[8].y);
-    if(pA<0.06 && pB<0.06 && cD<0.15){
-      targetMode=4;
-      mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.25,0.4),0.1);
-      gestureDebug.innerText="💖 I love you Pgll";
-      return;
-    }
-  }
-
   const lm=res.multiHandLandmarks[0];
   const up=i=>lm[i].y<lm[i-2].y;
   const f=[up(8),up(12),up(16),up(20)];
+
+  // 💖 THREE FINGER LOVE (EDITED PART)
+  if(f[0] && f[1] && f[2] && !f[3]){
+    targetMode=4;
+    mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.25,0.4),0.08);
+    gestureDebug.innerText="💖 I love you Pgll";
+    return;
+  }
 
   if(f.every(v=>!v)){
     targetMode=1;
