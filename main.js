@@ -278,7 +278,7 @@ hands.onResults(res=>{
   if(f[0] && f[1] && f[2] && !f[3]){
     targetMode=4;
     mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.25,0.4),0.08);
-    gestureDebug.innerText="💖 I love you Bitto ";
+    gestureDebug.innerText="💖 I love you Pgll ";
     return;
   }
 
