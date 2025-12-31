@@ -104,7 +104,9 @@ function generateTextPoints(txt) {
   }
   return pts;
 }
-const textRaw = generateTextPoints("I love you Bitto");
+
+// ⭐ FIST TEXT UPDATED HERE ⭐
+const textRaw = generateTextPoints("Am I Selected ??");
 
 // ================= SHAPES =================
 function heartPoint(i) {
@@ -274,11 +276,19 @@ hands.onResults(res=>{
   const up=i=>lm[i].y<lm[i-2].y;
   const f=[up(8),up(12),up(16),up(20)];
 
-  // 💖 THREE FINGER LOVE (EDITED PART)
+  // 💖 THREE FINGER LOVE (keep original)
   if(f[0] && f[1] && f[2] && !f[3]){
     targetMode=4;
     mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.25,0.4),0.08);
     gestureDebug.innerText="💖 I love you Bitto ";
+    return;
+  }
+
+  // ✊ FIST → SHOW TEXT
+  if(f.every(v=>!v)){
+    targetMode=4;
+    mat.uniforms.uColor.value.lerp(new THREE.Color(1,1,1),0.1);
+    gestureDebug.innerText="✊ Am I Selected ??";
     return;
   }
 
