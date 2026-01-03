@@ -276,11 +276,11 @@ hands.onResults(res=>{
   const up=i=>lm[i].y<lm[i-2].y;
   const f=[up(8),up(12),up(16),up(20)];
 
-  // 💖 THREE FINGER LOVE (keep original)
+  
   if(f[0] && f[1] && f[2] && !f[3]){
     targetMode=4;
     mat.uniforms.uColor.value.lerp(new THREE.Color(1,0.25,0.4),0.08);
-    gestureDebug.innerText="💖 I love you Pgll ";
+    gestureDebug.innerText="Am I Selected? ";
     return;
   }
 
